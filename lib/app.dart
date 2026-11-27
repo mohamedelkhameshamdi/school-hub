@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/theme.dart';
-import 'presentation/screens/home_shell.dart';
+import 'presentation/screens/auth_gate.dart';
 
 class SchoolHubApp extends StatelessWidget {
   const SchoolHubApp({super.key});
@@ -14,7 +14,7 @@ class SchoolHubApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: const HomeShell(),
+      home: const AuthGate(),
     );
   }
 }

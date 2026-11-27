@@ -1,13 +1,46 @@
 import 'package:flutter/material.dart';
 
 import '../../core/format.dart';
+import '../../data/models/app_user.dart';
 import '../../data/models/news_item.dart';
+import '../../data/repositories/school_repository.dart';
 import '../widgets/category_style.dart';
+import '../widgets/dialogs.dart';
+import 'news_form_screen.dart';
 
 class NewsDetailScreen extends StatelessWidget {
-  const NewsDetailScreen({super.key, required this.item});
+  const NewsDetailScreen({
+    super.key,
+    required this.item,
+    required this.repository,
+    required this.user,
+  });
 
   final NewsItem item;
+  final SchoolRepository repository;
+  final AppUser user;
+
+  Future<void> _edit(BuildContext context) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => NewsFormScreen(repository: repository, existing: item),
+      ),
+    );
+    if (saved == true && context.mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _delete(BuildContext context) async {
+    final ok = await confirmDelete(context, title: 'Delete this news post?');
+    if (!ok) return;
+    try {
+      await repository.deleteNews(item.id);
+      if (context.mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (context.mounted) {
+        showMessage(context, "Couldn't delete the post. Try again.");
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +53,20 @@ class NewsDetailScreen extends StatelessWidget {
           SliverAppBar(
             pinned: true,
             expandedHeight: 220,
+            actions: [
+              if (user.isAdmin) ...[
+                IconButton(
+                  tooltip: 'Edit',
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _edit(context),
+                ),
+                IconButton(
+                  tooltip: 'Delete',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _delete(context),
+                ),
+              ],
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(

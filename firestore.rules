@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Each user reads their own profile and creates it once, as a student.
+    // Nobody can change a role from the app: admins are set in the console.
+    match /users/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == 'student';
+      allow update, delete: if false;
+    }
+
+    // Everyone signed in reads, only admins create / edit / delete.
+    match /news/{newsId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /plans/{planId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /events/{eventId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+
+      // A student can only join or leave as themselves.
+      match /participants/{uid} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.auth.uid == uid
+          && request.resource.data.uid == uid;
+        allow delete: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+        allow update: if false;
+      }
+    }
+  }
+}
